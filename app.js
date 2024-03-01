@@ -20,13 +20,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// app.use(express.static('public'));
-
 let dbConnect = async () => {
   try {
-    let connect = await mongoose.connect(
-      'mongodb+srv://adegoke0813:Kenny22123@chatapp.av3tuih.mongodb.net/chatApp?retryWrites=true&w=majority'
-    );
+    let connect = await mongoose.connect(process.env.MongoDB_CONNECTION);
     console.log('connection to mongodb was successful');
   } catch (err) {
     console.log('failed to connect mongodb');
@@ -34,12 +30,6 @@ let dbConnect = async () => {
 };
 
 dbConnect();
-
-// // Express route
-// app.get('/', (req, res) => {
-
-//   res.send('Hello, this is an Express server with WebSocket!');
-// });
 
 app.use('/api/v1/user', userRoute);
 app.use('/api/v1/chat', chatRoute);
@@ -58,4 +48,5 @@ app.listen(PORT, (err) => {
   }
 });
 
+// websocket connection initialize
 socket_server();

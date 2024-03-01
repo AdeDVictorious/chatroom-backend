@@ -51,7 +51,6 @@ class Services {
 
       // find all and return the last entered as the first
       let myGroup = await Group.find({ creator_id: data.user_id });
-      // .sort({ _id: -1 });
 
       let joinedGroup = await Member.find({ user_id: data.user_id }).populate(
         'group_id'

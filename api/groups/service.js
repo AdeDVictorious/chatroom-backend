@@ -1,4 +1,4 @@
-let { Group, Member } = require('./model');
+let { Group, Member, Group_Chat } = require('./model');
 
 class Services {
   async new_group(payload) {
@@ -155,9 +155,17 @@ class Services {
         return { status: 404, message: 'this group does not exit' };
       }
 
+      // deleted group with group_id
       let deleted_Group = await Group.deleteOne({ _id: payload.id });
+
+      // delete members from the database
       let get_Member = await Member.deleteMany({ group_id: payload.id });
 
+      // delete members chats in group from the database
+      let deleteGroup_chats = await Group_Chat.deleteMany({
+        group_id: payload.id,
+      });
+    
       return {
         status: 204,
         message: 'Group deleted successfully',
@@ -168,7 +176,6 @@ class Services {
       return {
         status: 404,
         message: 'Error deleting Group',
-        errMsg: err.message,
       };
     }
   }

@@ -9,6 +9,7 @@ let send_chat_message = async (data_parse, clients) => {
     let receiver = clients.get(`${to}`);
     let sender = clients.get(`${from}`);
 
+    // console.log(sender, 'we have a sender in here');
     // console.log(receiver, 'we have a receiver in here');
     if (!receiver) {
       //User not online but message saved to database

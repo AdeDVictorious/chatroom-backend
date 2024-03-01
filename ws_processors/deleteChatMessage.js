@@ -2,6 +2,7 @@ let Chat = require('../models/chatModel');
 
 let delete_chat_message = async (data_parse, clients) => {
   try {
+    // format the data_parse
     let id = data_parse.data.id;
 
     let data = {

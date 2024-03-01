@@ -2,8 +2,6 @@ module.exports = () => {
   const WebSocket = require('ws');
   let http = require('http');
   let User = require('./models/userModel');
-  let Chat = require('./models/chatModel');
-  let updateUserById = require('./api/users/service');
 
   let { handle_ws_message } = require('./ws_processors/handleWSMessage');
 
@@ -32,6 +30,8 @@ module.exports = () => {
     // let client_id = req.headers['sec-websocket-key'];
 
     clients.set(client_id, ws);
+
+    // console.log(clients, 'Clients');
 
     let payload = {
       status: 'Online',
