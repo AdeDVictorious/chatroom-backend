@@ -4,26 +4,27 @@ let authUser = require('../../middleware/authUser');
 let Service = require('./service');
 
 let userRoute = express.Router();
+let signupRoute = express.Router();
+let loginRoute = express.Router();
+
+signupRoute.post('/signup', async (req, res) => {
+  let payload = { ...req.body };
+  let services = new Service();
+  let resp = await services.new_user(payload);
+  res.status(resp.status).json(resp);
+});
+
+loginRoute.post('/login', async (req, res) => {
+  let data = { ...req.body };
+  let services = new Service();
+  let resp = await services.user_login(data);
+  res.status(resp.status).json(resp);
+});
 
 userRoute.get('/dashboard', authUser, async (req, res) => {
   let data = { ...req.query };
   let services = new Service();
   let resp = await services.dashboard(data);
-  res.status(resp.status).json(resp);
-});
-
-userRoute.post('/addUser', async (req, res) => {
-  let data = { ...req.body };
-  console.log(data, 'data2');
-  let services = new Service();
-  let resp = await services.new_user(data);
-  res.status(resp.status).json(resp);
-});
-
-userRoute.post('/login_user', async (req, res) => {
-  let data = { ...req.body };
-  let services = new Service();
-  let resp = await services.user_login(data);
   res.status(resp.status).json(resp);
 });
 
@@ -56,4 +57,4 @@ userRoute.delete('/deleteUser_by_id/:id', async (req, res) => {
   res.status(resp.status).json(resp);
 });
 
-module.exports = userRoute;
+module.exports = { userRoute, signupRoute, loginRoute };

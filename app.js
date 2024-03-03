@@ -7,7 +7,7 @@ let cors = require('cors');
 
 let chatRoute = require('./api/chat/controller');
 let { group_Route } = require('./api/groups/controller');
-let userRoute = require('./api/users/controller');
+let { userRoute, signupRoute, loginRoute } = require('./api/users/controller');
 let memberRoute = require('./api/members/controller');
 let { group_Chat_Route } = require('./api/group_chats/controller');
 
@@ -31,6 +31,7 @@ let dbConnect = async () => {
 
 dbConnect();
 
+app.use('/api/v1', signupRoute, loginRoute);
 app.use('/api/v1/user', userRoute);
 app.use('/api/v1/chat', chatRoute);
 app.use('/api/v1/group_chat', group_Route);

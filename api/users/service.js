@@ -1,15 +1,15 @@
-let { User } = require('./model');
+let { User, Chat } = require('./model');
 let jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 class Services {
-  async new_user(data) {
+  async new_user(payload) {
     try {
-      let nickname = data.nickname;
-      let fullname = data.fullname;
-      let email = data.email;
-      let image = data.filename;
-      let password = data.password;
+      let nickname = payload.nickname;
+      let fullname = payload.fullname;
+      let email = payload.email;
+      let image = payload.image;
+      let password = payload.password;
 
       if (!nickname || !fullname || !email || !image || !password) {
         return { status: 400, message: 'Kindly fill all required field' };
@@ -33,6 +33,17 @@ class Services {
       if (user) {
         return { status: 200, message: 'This email has been used' };
       } else {
+        // format the payload
+
+        let data = {
+          nickname: nickname,
+          fullname: fullname,
+          email: email,
+          image: image,
+          password: password,
+        };
+
+        // Save into the database
         let new_user = await User.create(data);
 
         //generate the jwt token
@@ -52,8 +63,8 @@ class Services {
         };
       }
     } catch (err) {
-      console.log(err.message);
-      return { status: 400, message: 'error adding User', errMsg: err.message };
+      console.log(err);
+      return { status: 400, message: 'error creating new User' };
     }
   }
 
@@ -110,10 +121,8 @@ class Services {
 
   async dashboard(data) {
     try {
-      //find all but exclude the id passed into
+      // //find all but exclude the id passed into
       let users = await User.find({ _id: { $nin: [data.id] } });
-
-      // console.log(users, typeof users);
 
       return {
         status: 200,
@@ -126,7 +135,6 @@ class Services {
       return {
         status: 404,
         message: 'Error getting All chatroom message',
-        errMsg: err.message,
       };
     }
   }
