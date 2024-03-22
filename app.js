@@ -2,12 +2,14 @@ let express = require('express');
 let mongoose = require('mongoose');
 let dotenv = require('dotenv');
 let socket_server = require('./wsServer');
+let { isCelebrateError } = require('celebrate');
 
 let cors = require('cors');
 
+let { userRoute, signupRoute, loginRoute } = require('./api/users/controller');
+let { contactRoute } = require('./api/contact/controller');
 let chatRoute = require('./api/chat/controller');
 let { group_Route } = require('./api/groups/controller');
-let { userRoute, signupRoute, loginRoute } = require('./api/users/controller');
 let memberRoute = require('./api/members/controller');
 let { group_Chat_Route } = require('./api/group_chats/controller');
 
@@ -33,10 +35,24 @@ dbConnect();
 
 app.use('/api/v1', signupRoute, loginRoute);
 app.use('/api/v1/user', userRoute);
+app.use('/api/v1/contacts', contactRoute);
 app.use('/api/v1/chat', chatRoute);
 app.use('/api/v1/group_chat', group_Route);
 app.use('/api/v1/members', memberRoute);
 app.use('/api/v1/groups_Chat', group_Chat_Route);
+
+app.use((error, _, res, next) => {
+  console.log(error, 'error');
+  if (isCelebrateError(error)) {
+    const errorMessage =
+      error.details.get('body') ||
+      error.details.get('query') ||
+      error.details.get('params');
+    const message = errorMessage?.message?.replace(/"/g, '');
+    res.status(422).json({ errMsg: message });
+  }
+  next();
+});
 
 let PORT = process.env.PORT || 5000;
 

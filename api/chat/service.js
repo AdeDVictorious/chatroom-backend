@@ -1,89 +1,100 @@
 let { Chat } = require('./model');
 
 class Services {
-  async new_chat(data) {
+  // post a new chat
+  async new_chat(payload) {
     try {
       //check if the input is empty
-      if (!data.sender_id || !data.receiver_id || !data.message) {
+      if (!payload.sender_id || !payload.receiver_id || !payload.message) {
         return { status: 400, message: 'Kindly fill all require field' };
+      } else {
+        // format the data
+        let data = {
+          sender_id: payload.sender_id,
+          receiver_id: payload.receiver_id,
+          message: payload.message,
+        };
+
+        //add to the database
+        let new_chat = await Chat.create(data);
+
+        //return responses to the user
+        return {
+          status: 201,
+          message: 'Chat was added successfully',
+          new_chat,
+        };
       }
-
-      //add to the database
-      let new_chat = await Chat.create(data);
-
-      console.log(new_chat, 'this is the chat');
-
-      //return responses to the user
-      return {
-        status: 201,
-        message: 'Chat was added successfully',
-        new_chat,
-      };
     } catch (err) {
       console.log(err.message);
-      return { status: 400, message: 'error adding chat', errMsg: err.message };
+      return { status: 400, message: 'error adding chat message' };
     }
   }
 
+  // get chat by ID
   async get_chatById(data) {
     try {
-      let get_Msg = await Chat.findById({ _id: data.id });
+      // check if chat exist
+      let get_Msg = await Chat.findOne({ _id: data.id });
 
+      // if chat is not found
       if (!get_Msg) {
         return { status: 404, message: 'this ID is not found' };
       }
 
       return {
         status: 200,
-        message: 'chat message was found successfully',
+        message: 'Chat with ID was found successfully',
         get_Msg,
       };
     } catch (err) {
       console.log(err);
       return {
         status: 404,
-        message: 'Error getting chatroom message',
-        errMsg: err.message,
+        message: 'Error getting chat message',
       };
     }
   }
 
-  async update_chatById(data1) {
+  // update chat by ID
+  async update_chatById(payload) {
     try {
-      if (!data1.message) {
+      // chat message is empty
+      if (!payload.message) {
         return {
           status: 400,
           message: 'Kindly supply the message to be updated',
         };
       }
 
-      let data = { message: data1.message };
-
-      let getMsg = await Chat.findOne({ _id: data1.id });
+      let getMsg = await Chat.findOne({ _id: payload.id });
 
       if (!getMsg) {
         return { status: 404, message: 'this ID is not found' };
+      } else {
+        // format the payload
+        let data = { message: payload.message };
+
+        let get_Msg = await Chat.updateOne({ _id: payload.id }, data);
+
+        let updatedMsg = await Chat.findOne({ _id: payload.id });
+
+        return {
+          status: 200,
+          message: 'chat message was updated successfully',
+          updatedMsg,
+        };
       }
-
-      let get_Msg = await Chat.updateOne({ _id: data1.id }, data);
-
-      let updatedMsg = await Chat.findOne({ _id: data1.id });
-
-      return {
-        status: 200,
-        message: 'chat message was updated successfully',
-        updatedMsg,
-      };
     } catch (err) {
       console.log(err);
       return {
         status: 404,
         message: 'Error updating chat message',
-        errMsg: err.message,
       };
     }
   }
 
+  // Get all chat message
   async getAll_chat() {
     try {
       let get_Msg = await Chat.find();
@@ -99,16 +110,15 @@ class Services {
       return {
         status: 404,
         message: 'Error getting All chatroom message',
-        errMsg: err.message,
       };
     }
   }
 
+  // Delete chat by ID
   async delete_chatById(data) {
     try {
+      // check if data exist
       let getMsg = await Chat.findOne({ _id: data.id });
-
-      console.log(getMsg, 'I am here');
 
       if (!getMsg) {
         return { status: 404, message: 'this ID is not found' };
@@ -119,14 +129,12 @@ class Services {
       return {
         status: 204,
         message: 'chat message was deleted successfully',
-        get_Msg,
       };
     } catch (err) {
       console.log(err);
       return {
         status: 404,
         message: 'Error getting chatroom message',
-        errMsg: err.message,
       };
     }
   }

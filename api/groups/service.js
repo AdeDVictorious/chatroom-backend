@@ -1,19 +1,23 @@
 let { Group, Member, Group_Chat } = require('./model');
 
 class Services {
+  // Get all group
   async new_group(payload) {
     try {
       //format the payload
+      let name = payload.name.trim();
+
+      // form a data to save to database
       let data = {
         creator_id: payload.creator_id,
-        name: payload.name,
+        name: name,
         image: payload.image,
         limit: payload.limit,
       };
 
       //check if the input is empty
       if (!data.creator_id || !data.name || !data.image || !data.limit) {
-        return { status: 400, message: 'Kindly fill all require field' };
+        return { status: 422, message: 'Kindly fill all require field' };
       }
 
       // check if the user already create group with this group_name
@@ -40,7 +44,6 @@ class Services {
       return {
         status: 400,
         message: 'error adding Group',
-        errMsg: err.message,
       };
     }
   }
@@ -56,53 +59,93 @@ class Services {
 
       return {
         status: 200,
-        message: 'All Group message was found successfully',
+        message: 'All Group found successfully',
         dbCount: getAll_group.length,
         getAll_group,
       };
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
-        message: 'Error getting All Grouproom message',
-        errMsg: err.message,
+        status: 400,
+        message: 'Error getting All Group chat',
       };
     }
   }
 
+  // Get group by ID
   async get_groupById(payload) {
     try {
+      // find group by ID
+      console.log(payload.id);
+
       let get_Group = await Group.findById({ _id: payload.id });
 
       if (!get_Group) {
         return { status: 404, message: 'this ID is not found' };
+      } else {
+        // return this
+        return {
+          status: 200,
+          message: 'Group chat was found successfully',
+          get_Group,
+        };
       }
-
-      return {
-        status: 200,
-        message: 'Group message was found successfully',
-        get_Group,
-      };
     } catch (err) {
       console.log(err);
       return {
         status: 404,
-        message: 'Error getting Grouproom message',
+        message: 'Error getting Group by ID',
       };
     }
   }
 
+  // To get all groups created and joined
+  async get_groups(payload) {
+    try {
+      let data = { user_id: payload.id };
+
+      // find all and return the last entered as the first
+      let myGroup = await Group.find({ creator_id: data.user_id });
+
+      let joinedGroup = await Member.find({ user_id: data.user_id }).populate(
+        'group_id'
+      );
+
+      console.log(joinedGroup, 'joinedGroup');
+
+      return {
+        status: 200,
+        message: 'All Groups were found successfully',
+        myGroup,
+        joinedGroup,
+      };
+    } catch (err) {
+      console.log(err);
+      return {
+        status: 400,
+        message: 'Error getting All Group messages',
+      };
+    }
+  }
+
+  // Update group by ID
   async update_groupById(payload) {
     try {
+      //format the payload
+      let group_name = payload.group_name.trim();
+      let group_limit = payload.group_limit;
+
       let data = {
-        name: payload.group_name,
+        name: group_name,
         image: payload.image,
-        limit: payload.group_limit,
+        limit: group_limit,
         last_limit: payload.last_limit,
       };
 
-      // if current limit is < than last limit
-      if (parseInt(data.limit) < parseInt(data.last_limit)) {
+      if (!data.name || !data.image || !data.limit || !data.last_limit) {
+        return { status: 400, message: 'Kindly filled required field' };
+      } else if (parseInt(data.limit) < parseInt(data.last_limit)) {
+        // if current limit is < than last limit
         await Member.deleteMany({ group_id: payload.id });
 
         let updtById = await Group.findByIdAndUpdate({ _id: payload.id }, data);
@@ -146,9 +189,10 @@ class Services {
     }
   }
 
+  // delete group by ID
   async delete_groupById(payload) {
-    console.log(payload, 'what is going on here');
     try {
+      // check if the id exist
       let get_Group = await Group.findOne({ _id: payload.id });
 
       if (!get_Group) {
@@ -165,7 +209,7 @@ class Services {
       let deleteGroup_chats = await Group_Chat.deleteMany({
         group_id: payload.id,
       });
-    
+
       return {
         status: 204,
         message: 'Group deleted successfully',

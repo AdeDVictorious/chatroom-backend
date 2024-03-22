@@ -1,176 +1,137 @@
-let { Group, Member } = require('./model');
+let { Group_Chat } = require('./model');
 
 class Services {
-  async new_group(payload) {
+  // post or create a new group message
+  async new_group_chat(payload) {
     try {
-      //format the payload
-      let data = {
-        creator_id: payload.creator_id,
-        name: payload.name,
-        image: payload.image,
-        limit: payload.limit,
-      };
-
       //check if the input is empty
-      if (!data.creator_id || !data.name || !data.image || !data.limit) {
-        return { status: 400, message: 'Kindly fill all require field' };
+      if (!payload.sender_id || !payload.group_id || !payload.message) {
+        return { status: 422, message: 'Kindly fill all require field' };
+      } else {
+        // format the data
+        let data = {
+          sender_id: payload.sender_id,
+          group_id: payload.group_id,
+          message: payload.message,
+        };
+
+        //add to the database
+        let new_groupChat = await Group_Chat.create(data);
+
+        //return responses to the user
+        return {
+          status: 201,
+          message: 'Group chat was added successfully',
+          new_groupChat,
+        };
       }
-
-      // check if the user already create group with this group_name
-      let check4_group = await Group.findOne({
-        name: data.name,
-        creator_id: data.creator_id,
-      });
-
-      if (check4_group) {
-        return { status: 400, message: 'This group name already exist' };
-      }
-
-      //add to the database
-      let new_group = await Group.create(data);
-
-      //return responses to the user
-      return {
-        status: 201,
-        message: 'Group was added successfully',
-        new_group,
-      };
     } catch (err) {
       console.log(err.message);
-      return {
-        status: 400,
-        message: 'error adding Group',
-        errMsg: err.message,
-      };
+      return { status: 400, message: 'error adding chat message' };
     }
   }
 
-  async get_groups(payload) {
+  // get chat by ID
+  async get_groupChatById(payload) {
     try {
-      let data = { user_id: payload.id };
-
-      // find all and return the last entered as the first
-      let myGroup = await Group.find({ creator_id: data.user_id });
-
-      let joinedGroup = await Member.find({ user_id: data.user_id }).populate(
-        'group_id'
-      );
-
-      return {
-        status: 200,
-        message: 'All Group message was found successfully',
-        myGroup,
-        joinedGroup,
-      };
-    } catch (err) {
-      console.log(err);
-      return {
-        status: 404,
-        message: 'Error getting All Grouproom message',
-        errMsg: err.message,
-      };
-    }
-  }
-
-  async get_groupsById(payload) {
-    try {
-      let get_Group = await Group.findById({ _id: payload.id });
+      let get_Group = await Group_Chat.findById({ _id: payload.id });
 
       if (!get_Group) {
         return { status: 404, message: 'this ID is not found' };
+      } else {
+        return {
+          status: 200,
+          message: 'Group message was found successfully',
+          get_Group,
+        };
       }
+    } catch (err) {
+      console.log(err);
+      return {
+        status: 404,
+        message: 'Error getting Group  message',
+      };
+    }
+  }
+
+  async getAll_Groupchat() {
+    try {
+      let get_Msg = await Group_Chat.find();
 
       return {
         status: 200,
-        message: 'Group message was found successfully',
-        get_Group,
+        message: 'All group chat message was found successfully',
+        dbCount: get_Msg.length,
+        get_Msg,
       };
     } catch (err) {
       console.log(err);
       return {
         status: 404,
-        message: 'Error getting Grouproom message',
+        message: 'Error getting all group chat message',
       };
     }
   }
 
-  async update_groupsById(payload) {
+  // update chat by ID
+  async update_groupChatById(payload) {
     try {
-      let data = {
-        name: payload.group_name,
-        image: payload.image,
-        limit: payload.group_limit,
-        last_limit: payload.last_limit,
-      };
+      // chat message is empty
+      if (!payload.message) {
+        return {
+          status: 400,
+          message: 'Kindly supply the message to be updated',
+        };
+      }
 
-      // if current limit is < than last limit
-      if (parseInt(data.limit) < parseInt(data.last_limit)) {
-        await Member.deleteMany({ group_id: payload.id });
+      let getMsg = await Group_Chat.findOne({ _id: payload.id });
 
-        let updtById = await Group.findByIdAndUpdate({ _id: payload.id }, data);
+      if (!getMsg) {
+        return { status: 404, message: 'this ID is not found' };
+      } else {
+        // format the payload
+        let data = { message: payload.message };
 
-        let updated_Group = await Group.findOne({ _id: payload.id });
+        let get_Msg = await Group_Chat.updateOne({ _id: payload.id }, data);
+
+        let updatedMsg = await Group_Chat.findOne({ _id: payload.id });
 
         return {
           status: 200,
-          message: 'Group was updated successfully',
-          updated_Group,
+          message: 'Group chat message was updated successfully',
+          updatedMsg,
         };
       }
-
-      let updateObj;
-
-      if (data.image != undefined) {
-        updateObj = {
-          name: data.group_name,
-          image: data.image,
-          limit: data.group_limit,
-        };
-      } else {
-        updateObj = { name: data.group_name, limit: data.group_limit };
-      }
-
-      let updtById = await Group.findByIdAndUpdate({ _id: payload.id }, data);
-
-      let updated_Group = await Group.findOne({ _id: payload.id });
-
-      return {
-        status: 200,
-        message: 'Group was updated successfully',
-        updated_Group,
-      };
     } catch (err) {
       console.log(err);
       return {
         status: 404,
-        message: 'Error updating Group',
+        message: 'Error updating group chat message',
       };
     }
   }
 
+  // Delete chat by ID
   async delete_groupsById(payload) {
-    console.log(payload, 'what is going on here');
     try {
-      let get_Group = await Group.findOne({ _id: payload.id });
+      // check if data exist
+      let getMsg = await Group_Chat.findOne({ _id: payload.id });
 
-      if (!get_Group) {
-        return { status: 404, message: 'this group does not exit' };
+      if (!getMsg) {
+        return { status: 404, message: 'this ID is not found' };
+      } else {
+        let get_Msg = await Group_Chat.deleteOne({ _id: getMsg.id });
+
+        return {
+          status: 204,
+          message: 'Group chat message was deleted successfully',
+        };
       }
-
-      let deleted_Group = await Group.deleteOne({ _id: payload.id });
-      let get_Member = await Member.deleteMany({ group_id: payload.id });
-
-      return {
-        status: 204,
-        message: 'Group deleted successfully',
-        deleted_Group,
-      };
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
-        message: 'Error deleting Group',
-        errMsg: err.message,
+        status: 400,
+        message: 'Error deleting group chat message',
       };
     }
   }

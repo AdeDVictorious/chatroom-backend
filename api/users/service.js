@@ -1,18 +1,21 @@
-let { User, Chat } = require('./model');
+let { User, Chat, My_contact, My_Contact } = require('./model');
 let jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 class Services {
   async new_user(payload) {
     try {
-      let nickname = payload.nickname;
-      let fullname = payload.fullname;
+      let nick_name = payload.nickname;
+      let full_name = payload.fullname;
       let email = payload.email;
       let image = payload.image;
       let password = payload.password;
 
+      let nickname = nick_name.trim();
+      let fullname = full_name.trim();
+
       if (!nickname || !fullname || !email || !image || !password) {
-        return { status: 400, message: 'Kindly fill all required field' };
+        return { status: 422, message: 'Kindly fill all required field' };
       }
       // Email validation function
       function validateEmail(email) {
@@ -74,7 +77,7 @@ class Services {
       let password = data.password;
 
       if (!email || !password) {
-        return { status: 400, message: 'Kindly fill all required field' };
+        return { status: 422, message: 'Kindly fill all required field' };
       }
 
       // Email validation function
@@ -92,15 +95,20 @@ class Services {
       }
 
       // 2). check if user exist and password is found in the database
-      const user = await User.findOne({ email: email }).select('+password');
+      const Users = await User.findOne({ email: email });
 
-      if (!user || !(await bcrypt.compare(password, user.password))) {
+      if (!Users || !(await bcrypt.compare(password, Users.password))) {
         return { status: 400, message: 'Incorrect email or password' };
       } else {
         //generate the jwt token
-        let token = await jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+        let token = await jwt.sign({ id: Users._id }, process.env.JWT_SECRET, {
           expiresIn: process.env.JWT_EXPIRES_IN,
         });
+
+        // find the user excluding password, createdAt & updatedAt
+        const user = await User.findOne({ email: email }).select(
+          '-password -createdAt -updatedAt'
+        );
 
         return {
           status: 200,
@@ -114,15 +122,18 @@ class Services {
       return {
         status: 400,
         message: 'Error logging User in',
-        errMsg: err.message,
       };
     }
   }
 
   async dashboard(data) {
     try {
-      // //find all but exclude the id passed into
-      let users = await User.find({ _id: { $nin: [data.id] } });
+      // // //find all but exclude the id passed into
+      let users = await My_Contact.find({
+        user_id: data.id,
+      })
+        .populate('contact_id')
+        .sort({ _id: -1 });
 
       return {
         status: 200,
@@ -133,73 +144,110 @@ class Services {
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
+        status: 400,
         message: 'Error getting All chatroom message',
       };
     }
   }
 
-  async getUserById(data) {
+  async my_profile(payload) {
     try {
-      let get_user = await User.findById({ _id: data.id });
-
-      if (!get_user) {
-        return { status: 404, message: 'this ID is not found' };
+      // check if the payload is not empty
+      if (!payload.id) {
+        return { status: 404, message: 'id is missing' };
       }
+
+      // format the payload
+      let data = {
+        user_id: payload.id,
+      };
+
+      // find User by ID
+      let userData = await User.findById({ _id: data.user_id });
+
+      let isOwner = userData.nickname ? true : false;
+      let url = `http://localhost:8000/chat_me_link/${userData._id}`;
 
       return {
         status: 200,
-        message: 'User message was found successfully',
-        get_user,
+        message:
+          'copy & share the link below to friends and family, inorder for them to chat you up',
+        url,
+        userData,
+        isOwner,
       };
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
-        message: 'Error getting user message',
-        errMsg: err.message,
+        status: 400,
+        message: 'Error adding new member',
       };
     }
   }
 
-  async updateUserById(data1) {
+  async get_userById(data) {
     try {
-      if (!data1.nickname) {
+      // check if user exist with the ID
+      let get_user = await User.findById({ _id: data.id });
+
+      // check if user does not exist with the ID
+      if (!get_user) {
+        return { status: 404, message: 'this ID is not found' };
+      } else {
+        // return the user found back to the client
         return {
-          status: 400,
+          status: 200,
+          message: 'User was found successfully',
+          get_user,
+        };
+      }
+    } catch (err) {
+      console.log(err);
+      return {
+        status: 400,
+        message: 'Error getting user by ID',
+      };
+    }
+  }
+
+  async update_userById(payload) {
+    try {
+      if (!payload.nickname) {
+        return {
+          status: 422,
           message: 'Kindly supply the nickname to be updated',
         };
       }
 
-      let data = { nickname: data1.nickname };
+      let data = { nickname: payload.nickname };
 
-      let getUser = await Chat.findOne({ _id: data1.id });
+      let getUser = await User.findOne({ _id: payload.id });
 
       if (!getUser) {
         return { status: 404, message: 'this ID is not found' };
       }
 
-      let get_Msg = await Chat.updateOne({ _id: data1.id }, data);
+      let get_Msg = await User.updateOne({ _id: payload.id }, data);
 
-      let updated_Msg = await Chat.findOne({ _id: data1.id });
+      let updated_User = await User.findOne({ _id: payload.id });
 
       return {
         status: 200,
         message: 'User nickname was updated successfully',
-        updated_Msg,
+        updated_User,
       };
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
+        status: 400,
         message: 'Error updating user nickname',
-        errMsg: err.message,
       };
     }
   }
 
   async get_all_users() {
     try {
+      // find all Users
       let get_all_user = await User.find();
 
       return {
@@ -211,14 +259,13 @@ class Services {
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
+        status: 400,
         message: 'Error getting All chatroom message',
-        errMsg: err.message,
       };
     }
   }
 
-  async deleteUserById(data) {
+  async delete_userById(data) {
     try {
       let getUser = await User.findOne({ _id: data.id });
 
@@ -235,7 +282,7 @@ class Services {
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
+        status: 400,
         message: 'Error getting chatroom message',
       };
     }

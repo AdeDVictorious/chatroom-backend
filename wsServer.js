@@ -24,7 +24,11 @@ module.exports = () => {
   wss.on('connection', async (ws, req) => {
     ////connection handshake
     //using the backend to test while
-    let client_id = req.headers['sec-websocket-protocol'];
+    // let client_id = req.headers['sec-websocket-protocol'];
+
+    const client_id = req.url.split('user_id=')[1];
+
+    console.log(client_id, 'client_id');
 
     ////using the frontend to test
     // let client_id = req.headers['sec-websocket-key'];

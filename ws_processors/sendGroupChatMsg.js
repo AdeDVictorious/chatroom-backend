@@ -62,10 +62,10 @@ let send_group_chats = async (data_parse, ws, clients) => {
     // payload incase of error
     let payload = {
       status: 'error sending message',
-      statuscode: 404,
+      statuscode: 400,
     };
 
-    ws.send(JSON.stringify({ status: 404, payload }));
+    ws.send(JSON.stringify({ status: 400, payload }));
   }
 };
 

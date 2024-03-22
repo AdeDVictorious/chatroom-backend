@@ -10,6 +10,8 @@ let { delete_group_chats } = require('./deleteGroupChatMsg');
 let handle_ws_message = async (data, ws, clients) => {
   let bufferData = data.toString();
 
+  console.log(bufferData, 'bufferData');
+
   //Parse the data to Object
   let data_parse = JSON.parse(bufferData);
 

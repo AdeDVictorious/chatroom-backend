@@ -1,60 +1,128 @@
 let express = require('express');
-let url = require('url');
 let authUser = require('../../middleware/authUser');
+let userValidation = require('./validation');
 let Service = require('./service');
 
 let userRoute = express.Router();
 let signupRoute = express.Router();
 let loginRoute = express.Router();
 
-signupRoute.post('/signup', async (req, res) => {
-  let payload = { ...req.body };
-  let services = new Service();
-  let resp = await services.new_user(payload);
-  res.status(resp.status).json(resp);
+let validation = new userValidation();
+
+// Signup route
+signupRoute.post('/signup', validation.validateSignup(), async (req, res) => {
+  try {
+    let payload = { ...req.body };
+    let services = new Service();
+    let resp = await services.new_user(payload);
+    res.status(resp.status).json(resp);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
-loginRoute.post('/login', async (req, res) => {
-  let data = { ...req.body };
-  let services = new Service();
-  let resp = await services.user_login(data);
-  res.status(resp.status).json(resp);
+// login route
+loginRoute.post('/login', validation.validateLogin(), async (req, res) => {
+  try {
+    let data = { ...req.body };
+    let services = new Service();
+    let resp = await services.user_login(data);
+    res.status(resp.status).json(resp);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
-userRoute.get('/dashboard', authUser, async (req, res) => {
-  let data = { ...req.query };
-  let services = new Service();
-  let resp = await services.dashboard(data);
-  res.status(resp.status).json(resp);
+// Dashboard
+userRoute.get(
+  '/dashboard',
+  validation.validateQuery(),
+  authUser,
+  async (req, res) => {
+    try {
+      let data = { ...req.query };
+      let services = new Service();
+      let resp = await services.dashboard(data);
+      res.status(resp.status).json(resp);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
+
+// my_profile /share contact_id via shared_link
+userRoute.get('/my_profile', authUser, async (req, res) => {
+  try {
+    let payload = { ...req.userInfo };
+    let services = new Service();
+    let resp = await services.my_profile(payload);
+    res.status(resp.status).json(resp);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
-userRoute.get('/getUser_by_id/:id', async (req, res) => {
-  let data = { ...req.params };
-  console.log(data);
-  let services = new Service();
-  let resp = await services.getUserById(data);
-  res.status(resp.status).json(resp);
+// get User by ID
+userRoute.get(
+  '/getUser/:id',
+  validation.validateParams(),
+  authUser,
+  async (req, res) => {
+    try {
+      let data = { ...req.params };
+      let services = new Service();
+      let resp = await services.get_userById(data);
+      res.status(resp.status).json(resp);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
+
+// get all Users
+userRoute.get('/get_all_users', authUser, async (req, res) => {
+  try {
+    let services = new Service();
+    let resp = await services.get_all_users();
+    res.status(resp.status).json(resp);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
-userRoute.get('/get_all_users', async (req, res) => {
-  let services = new Service();
-  let resp = await services.get_all_users();
-  res.status(resp.status).json(resp);
-});
+// update User by ID
+userRoute.put(
+  '/updateUser/:id',
+  validation.validateUpdate(),
+  validation.validateParams(),
+  authUser,
+  async (req, res) => {
+    try {
+      let payload = { ...req.params, ...req.body };
+      let services = new Service();
+      let resp = await services.update_userById(payload);
+      res.status(resp.status).json(resp);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
 
-userRoute.get('/updateUser_by_id/:id', async (req, res) => {
-  let data1 = { ...req.params, ...req.body };
-  console.log(data1);
-  let services = new Service();
-  let resp = await services.updateUserById(data1);
-  res.status(resp.status).json(resp);
-});
-
-userRoute.delete('/deleteUser_by_id/:id', async (req, res) => {
-  let data = { ...req.params };
-  let services = new Service();
-  let resp = await services.deleteUserById(data);
-  res.status(resp.status).json(resp);
-});
+// delete User by ID
+userRoute.delete(
+  '/deleteUser/:id',
+  validation.validateParams(),
+  authUser,
+  async (req, res) => {
+    try {
+      let data = { ...req.params };
+      let services = new Service();
+      let resp = await services.delete_userById(data);
+      res.status(resp.status).json(resp);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
 
 module.exports = { userRoute, signupRoute, loginRoute };
