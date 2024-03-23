@@ -267,13 +267,15 @@ class Services {
 
   async delete_userById(data) {
     try {
-      let getUser = await User.findOne({ _id: data.id });
+      let getUser = await User.findById({ _id: data.id });
+
+      console.log(data, getUser, 'Data');
 
       if (!getUser) {
         return { status: 404, message: 'this ID is not found' };
       }
 
-      let get_User = await Chat.deleteOne({ _id: getUser.id });
+      let get_User = await User.deleteOne({ _id: getUser._id });
 
       return {
         status: 204,

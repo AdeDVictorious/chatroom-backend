@@ -8,7 +8,7 @@ let load_group_chats = async (data_parse, ws) => {
     let chats = await Group_Chat.find({ group_id: group_id }).populate(
       'sender_id'
     );
- 
+
     payload = {
       status: 'load_group_chats',
       statuscode: 200,

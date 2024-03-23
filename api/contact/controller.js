@@ -7,7 +7,6 @@ let contactRoute = express.Router();
 
 let validation = new contactValidation();
 
-
 // Add a contact by group creator/Admin
 contactRoute.post(
   '/add_contacts',
@@ -89,6 +88,34 @@ contactRoute.get('/get_contacts', authUser, async (req, res) => {
     res.status(500).json(error);
   }
 });
+
+// get contact by ID
+contactRoute.get('/all_contacts', authUser, async (req, res) => {
+  try {
+    let services = new Service();
+    let resp = await services.get_all_contacts();
+    res.status(resp.status).json(resp);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+// get contact by ID
+contactRoute.get(
+  '/get_contact/:id',
+  validation.validateParams(),
+  authUser,
+  async (req, res) => {
+    try {
+      let payload = { ...req.params };
+      let services = new Service();
+      let resp = await services.get_contact(payload);
+      res.status(resp.status).json(resp);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
 
 // delete contact by ID
 contactRoute.delete(

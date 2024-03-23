@@ -307,6 +307,53 @@ class Services {
     }
   }
 
+  // get contact by ID
+  async get_all_contacts() {
+    try {
+      let getContact = await My_Contact.find();
+
+      if (!getContact) {
+        return { status: 404, message: 'this ID is not found' };
+      } else {
+        return {
+          status: 200,
+          message: 'All contacts was found successfully',
+          dbCount: getContact.length,
+          getContact,
+        };
+      }
+    } catch (err) {
+      console.log(err);
+      return {
+        status: 400,
+        message: 'Error getting all contact',
+      };
+    }
+  }
+
+  // get contact by ID
+  async get_contact(payload) {
+    try {
+      let getContact = await My_Contact.findOne({ _id: payload.id });
+
+      if (!getContact) {
+        return { status: 404, message: 'this ID is not found' };
+      } else {
+        return {
+          status: 200,
+          message: 'contact was found successfully',
+          getContact,
+        };
+      }
+    } catch (err) {
+      console.log(err);
+      return {
+        status: 400,
+        message: 'Error getting contact',
+      };
+    }
+  }
+
   // delete contact by ID
   async delete_contact(payload) {
     try {

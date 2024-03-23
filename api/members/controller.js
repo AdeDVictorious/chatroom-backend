@@ -11,7 +11,7 @@ let validation = new memberValidation();
 memberRoute.post(
   '/get_members',
   validation.validate_Ids(),
-  // authUser,
+  authUser,
   async (req, res) => {
     try {
       let payload = { ...req.body };
@@ -93,6 +93,7 @@ memberRoute.get(
   }
 );
 
+// get all member by Group ID
 memberRoute.get(
   '/get_member/:id',
   validation.validateParams(),
@@ -110,6 +111,18 @@ memberRoute.get(
   }
 );
 
+// get all member
+memberRoute.get('/all_members', authUser, async (req, res) => {
+  try {
+    let services = new Service();
+    let resp = await services.all_members();
+    res.status(resp.status).json(resp);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+// get member by ID
 memberRoute.delete(
   '/delete_member/:id',
   validation.validateParams(),

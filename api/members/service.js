@@ -4,112 +4,59 @@ let { User, My_Contact, Member, Group } = require('./model');
 let mongoose = require('mongoose');
 
 class Services {
+  // get all contact and members of the group
   async get_members(payload) {
     try {
+      if (!payload.group_id || !payload.user_id) {
+        return { status: 422, message: 'group_id or user_id is missing' };
+      }
+
       // format the payload
       let data = {
         group_id: payload.group_id,
         user_id: payload.user_id,
       };
 
-      console.log(data, 'data');
-      //// This is not the best way for now to show members
-      // // //find all but exclude the id passed into
-      // let users = await User.aggregate([
-      //   {
-      //     $lookup: {
-      //       from: 'members',
-      //       localField: '_id',
-      //       foreignField: 'user_id',
-      //       pipeline: [
-      //         {
-      //           $match: {
-      //             $expr: {
-      //               $and: [
-      //                 {
-      //                   $eq: [
-      //                     '$group_id',
-      //                     new mongoose.Types.ObjectId(data.group_id),
-      //                   ],
-      //                 },
-      //               ],
-      //             },
-      //           },
-      //         },
-      //       ],
-      //       as: 'member',
-      //     },
-      //   },
-      //   {
-      //     $match: {
-      //       _id: {
-      //         $nin: [new mongoose.Types.ObjectId(data.user_id)],
-      //       },
-      //     },
-      //   },
-      // ]);
-
-      // // // //find all but exclude the id passed into
-      // let users = await My_Contact.aggregate([
-      //   {
-      //     $lookup: {
-      //       from: 'members',
-      //       localField: 'contact_id',
-      //       foreignField: 'user_id',
-      //       pipeline: [
-      //         {
-      //           $match: {
-      //             $expr: {
-      //               $and: [
-      //                 {
-      //                   $eq: [
-      //                     '$group_id',
-      //                     new mongoose.Types.ObjectId(data.group_id),
-      //                   ],
-      //                 },
-      //               ],
-      //             },
-      //           },
-      //         },
-      //       ],
-      //       as: 'member',
-      //     },
-      //   },
-      //   {
-      //     $match: {
-      //       // user_id: new mongoose.Types.ObjectId(data.user_id),
-      //       _id: {
-      //         $nin: [new mongoose.Types.ObjectId(data.user_id)],
-      //       },
-      //     },
-      //   },
-      // ]);
-
+      ////this is the best way to write the code
       let users = await My_Contact.aggregate([
         {
           $lookup: {
             from: 'members',
             localField: 'contact_id',
             foreignField: 'user_id',
-            as: 'members',
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      {
+                        $eq: [
+                          '$group_id',
+                          new mongoose.Types.ObjectId(data.group_id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'member',
           },
         },
         {
           $match: {
             user_id: new mongoose.Types.ObjectId(data.user_id),
-            // 'members.user_id': new mongoose.Types.ObjectId(members.user_id),
-            // 'members.group_id': new mongoose.Types.ObjectId(data.group_id),
-            $expr: {
-              $and: ['$members.group_id', '$members.user_id'],
-            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'contact_id',
+            foreignField: '_id',
+            as: 'user',
           },
         },
       ]);
-
-      
-      console.log(users, 'users');
-
-      // SELECT  My_Contacts._id, My_Contacts.contact_id, My_Contacts. user_id, members._id, members.group_id, members.user_id FROM My_Contacts left join My_Contacts.contact_id on members.user_id where (members.group_id, and (My_Contact.contact_id equal members.user_id)) as members, where My_Contacts.user_id equal to  ?
 
       return {
         status: 200,
@@ -326,8 +273,6 @@ class Services {
     try {
       let get_member = await Member.find({ group_id: payload.id });
 
-      console.log(get_member.length, 'get_member');
-
       if (!get_member) {
         return { status: 404, message: 'this ID is not found' };
       } else {
@@ -381,6 +326,27 @@ class Services {
     }
   }
 
+  // all member by Group ID and UserID
+  async all_members() {
+    try {
+      let all_members = await Member.find();
+
+      return {
+        status: 200,
+        message: 'All Members was found successfully',
+        dbCount: all_members.length,
+        all_members,
+      };
+    } catch (err) {
+      console.log(err);
+      return {
+        status: 400,
+        message: 'Error getting all members',
+      };
+    }
+  }
+
+  // delete member by ID
   async delete_member(payload) {
     try {
       let getUser = await Member.findOne({ _id: payload.id });
@@ -398,7 +364,7 @@ class Services {
     } catch (err) {
       console.log(err);
       return {
-        status: 404,
+        status: 400,
         message: 'Error deleting member',
       };
     }
